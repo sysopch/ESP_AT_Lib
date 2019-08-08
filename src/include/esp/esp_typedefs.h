@@ -37,6 +37,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#include "stdbool.h"
 #include "stdint.h"
 #include "stdlib.h"
 #include "string.h"
@@ -453,6 +454,10 @@ typedef struct {
  * \param[in]       arg: Custom user argument
  */
 typedef void (*esp_api_cmd_evt_fn) (espr_t res, void* arg);
+
+#if ESP_CFG_CUSTOM_CMDS || __DOXYGEN__
+typedef bool (*esp_cust_fwup_fn)(void *context, uint8_t *buff, size_t size);
+#endif /* ESP_CFG_CUSTOM_CMDS || __DOXYGEN__ */
 
 #ifdef __cplusplus
 }

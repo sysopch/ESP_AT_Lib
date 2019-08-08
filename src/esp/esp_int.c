@@ -303,6 +303,10 @@ espi_reset_everything(uint8_t forced) {
     /* Step 1: Close all connections in memory */
     reset_connections(forced);
 
+    //reset version info - reset may be due to firmup
+    ESP_MEMSET(&esp.version_at,     0, sizeof (esp.version_at));
+    ESP_MEMSET(&esp.version_sdk,    0, sizeof (esp.version_sdk));
+
 #if ESP_CFG_MODE_STATION
     esp.m.sta.has_ip = 0;
     if (esp.m.sta.is_connected) {
@@ -760,6 +764,7 @@ espi_parse_received(esp_recv_t* rcv) {
         }
     }
 
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     /*
      * Check if connection is just active (or closed):
      *
@@ -770,7 +775,6 @@ espi_parse_received(esp_recv_t* rcv) {
      */
     if (rcv->len > 20 && (s = strstr(rcv->data, "+LINK_CONN:")) != NULL) {
         if (espi_parse_link_conn(s) && esp.m.link_conn.num < ESP_CFG_MAX_CONNS) {
-            uint8_t id;
             esp_conn_t* conn = &esp.m.conns[esp.m.link_conn.num];   /* Get connection pointer */
             if (esp.m.link_conn.failed && conn->status.f.active) {  /* Connection failed and now closed? */
                 conn->status.f.active = 0;      /* Connection was just closed */
@@ -789,13 +793,34 @@ espi_parse_received(esp_recv_t* rcv) {
                     esp_mem_free(conn->buff.buff);  /* Free memory */
                     conn->buff.buff = NULL;
                 }
-            } else if (!esp.m.link_conn.failed && !conn->status.f.active) {
+            } else if (!esp.m.link_conn.failed && !conn->status.f.active)
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+    /*
+     * Check if connection is just active:
+     */
+    if (rcv->len > 10 && (s = strstr(rcv->data, ",CONNECT\r\n")) != NULL) {
+        const char* tmp = s;
+        uint32_t num = 0;
+        while (tmp >= rcv->data && ESP_CHARISNUM(tmp[-1])) {
+            tmp--;
+        }
+        num = espi_parse_number(&tmp);          /* Parse connection number */
+        if (num < ESP_CFG_MAX_CONNS) {
+            esp_conn_t* conn = &esp.m.conns[num]; /* Parse received data */
+#endif //ESP_CFG_ESP_FLAVOR
+            {
+                uint8_t id;
                 id = conn->val_id;
                 ESP_MEMSET(conn, 0x00, sizeof(*conn));  /* Reset connection parameters */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
                 conn->num = esp.m.link_conn.num;/* Set connection number */
-                conn->status.f.active = !esp.m.link_conn.failed;    /* Check if connection active */
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+                conn->num = num;/* Set connection number */
+#endif //ESP_CFG_ESP_FLAVOR
+                conn->status.f.active = 1;      /* Check if connection active */
                 conn->val_id = ++id;            /* Set new validation ID */
 
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
                 conn->type = esp.m.link_conn.type;/* Set connection type */
                 ESP_MEMCPY(&conn->remote_ip, &esp.m.link_conn.remote_ip, sizeof(conn->remote_ip));
                 conn->remote_port = esp.m.link_conn.remote_port;
@@ -805,6 +830,11 @@ espi_parse_received(esp_recv_t* rcv) {
                 if (CMD_IS_CUR(ESP_CMD_TCPIP_CIPSTART)
                     && esp.m.link_conn.num == esp.msg->msg.conn_start.num
                     && conn->status.f.client) { /* Did we start connection on our own and connection is client? */
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+                conn->status.f.client = 0;      /* Default to server mode */
+                if (CMD_IS_CUR(ESP_CMD_TCPIP_CIPSTART) && num == esp.msg->msg.conn_start.num) {    /* Did we start connection on our own? */
+                    conn->type = esp.msg->msg.conn_start.type;  /* Set connection type */
+#endif //ESP_CFG_ESP_FLAVOR
                     conn->status.f.client = 1;  /* Go to client mode */
                     conn->evt_func = esp.msg->msg.conn_start.evt_func;  /* Set callback function */
                     conn->arg = esp.msg->msg.conn_start.arg;    /* Set argument for function */
@@ -1093,7 +1123,11 @@ espi_process(const void* data, size_t data_len) {
 
                     /* If we are waiting for "\n> " sequence when CIPSEND command is active */
                     if (CMD_IS_CUR(ESP_CMD_TCPIP_CIPSEND)) {
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
                         if (ch_prev2 == '\n' && ch_prev1 == '>' && ch == ' ') {
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+                        if (ch_prev2 == '\r' && ch_prev1 == '\n' && ch == '>') {
+#endif //ESP_CFG_ESP_FLAVOR
                             RECV_RESET();       /* Reset received object */
 
                             /* Now actually send the data prepared before */
@@ -1215,9 +1249,13 @@ espi_get_reset_sub_cmd(esp_msg_t* msg, uint8_t* is_ok, uint8_t* is_error, uint8_
         case ESP_CMD_ATE0:
         case ESP_CMD_ATE1: SET_NEW_CMD(ESP_CMD_GMR); break;
         case ESP_CMD_GMR: SET_NEW_CMD(ESP_CMD_WIFI_CWMODE); break;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
         case ESP_CMD_WIFI_CWMODE: SET_NEW_CMD(ESP_CMD_SYSMSG_CUR); break;
         case ESP_CMD_SYSMSG_CUR: SET_NEW_CMD(!*is_ok ? ESP_CMD_SYSMSG : ESP_CMD_TCPIP_CIPMUX); break;
         case ESP_CMD_SYSMSG: SET_NEW_CMD(ESP_CMD_TCPIP_CIPMUX); break;
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+        case ESP_CMD_WIFI_CWMODE: SET_NEW_CMD(ESP_CMD_TCPIP_CIPMUX); break;
+#endif //ESP_CFG_ESP_FLAVOR
         case ESP_CMD_TCPIP_CIPMUX:
 #if ESP_CFG_MODE_STATION
             SET_NEW_CMD(ESP_CMD_WIFI_CWLAPOPT); break;/* Set visible data for CWLAP command */
@@ -1348,6 +1386,16 @@ espi_process_sub_cmd(esp_msg_t* msg, uint8_t* is_ok, uint8_t* is_error, uint8_t*
                 *is_error = 1;
             }
         }
+    } else if (CMD_IS_DEF(ESP_CMD_CUSTOM_AIMFWUPB)) {
+           if (CMD_IS_CUR(ESP_CMD_CUSTOM_AIMFWUPB)) {
+               if (*is_ok) {
+                   SET_NEW_CMD(ESP_CMD_CUSTOM_AIMFWUPD);    /* start sending data */
+               }
+           } else if (CMD_IS_CUR(ESP_CMD_CUSTOM_AIMFWUPD)) {
+               if (*is_ok) {
+                   SET_NEW_CMD(ESP_CMD_CUSTOM_AIMFWUPE);    // execute firmup on device
+               }
+           }
     }
 
     /* Are we enabling server mode for some reason? */
@@ -1406,9 +1454,9 @@ espi_initiate_cmd(esp_msg_t* msg) {
             break;
         }
         case ESP_CMD_RESTORE: {                 /* Reset MCU with AT commands */
-            ESP_AT_PORT_SEND_BEGIN();
-            ESP_AT_PORT_SEND_CONST_STR("+RESTORE");
-            ESP_AT_PORT_SEND_END();
+//            ESP_AT_PORT_SEND_BEGIN();
+//            ESP_AT_PORT_SEND_CONST_STR("+RESTORE");
+//            ESP_AT_PORT_SEND_END();
             break;
         }
         case ESP_CMD_ATE0: {                    /* Disable AT echo mode */
@@ -1451,7 +1499,11 @@ espi_initiate_cmd(esp_msg_t* msg) {
         }
         case ESP_CMD_WIFI_CWLAPOPT: {           /* Set visible data on CWLAP command */
             ESP_AT_PORT_SEND_BEGIN();
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CONST_STR("+CWLAPOPT=1,2047");
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+            ESP_AT_PORT_SEND_CONST_STR("+CWLAPOPT=1,31");
+#endif //ESP_CFG_ESP_FLAVOR
             ESP_AT_PORT_SEND_END();
             break;
         }
@@ -1462,7 +1514,11 @@ espi_initiate_cmd(esp_msg_t* msg) {
         case ESP_CMD_WIFI_CWJAP: {              /* Try to join to access point */
             ESP_AT_PORT_SEND_BEGIN();
             ESP_AT_PORT_SEND_CONST_STR("+CWJAP");
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CUR_DEF(msg->msg.sta_join.def, 1);
+#else  //ESP_CFG_ESP_FLAVOR
+            ESP_AT_PORT_SEND_CONST_STR("=");
+#endif //ESP_CFG_ESP_FLAVOR
             espi_send_string(msg->msg.sta_join.name, 1, 1, 0);
             espi_send_string(msg->msg.sta_join.pass, 1, 1, 1);
             if (msg->msg.sta_join.mac != NULL) {
@@ -1528,6 +1584,7 @@ espi_initiate_cmd(esp_msg_t* msg) {
             ESP_AT_PORT_SEND_END();
             break;
         }
+
 #if ESP_CFG_MODE_STATION
         case ESP_CMD_WIFI_CIPSTA_GET:           /* Get station IP address */
 #endif /* ESP_CFG_MODE_STATION */
@@ -1547,7 +1604,9 @@ espi_initiate_cmd(esp_msg_t* msg) {
                 ESP_AT_PORT_SEND_CONST_STR("AP");
             }
 #endif /* ESP_CFG_MODE_ACCESS_POINT */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CUR_DEF(CMD_IS_CUR(CMD_GET_DEF()) && msg->msg.sta_ap_getip.def, 0);
+#endif //ESP_CFG_ESP_FLAVOR
             ESP_AT_PORT_SEND_CONST_STR("?");
             ESP_AT_PORT_SEND_END();
             break;
@@ -1572,7 +1631,9 @@ espi_initiate_cmd(esp_msg_t* msg) {
             }
 #endif /* ESP_CFG_MODE_ACCESS_POINT */
             ESP_AT_PORT_SEND_CONST_STR("MAC");
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CUR_DEF(CMD_IS_CUR(CMD_GET_DEF()) && msg->msg.sta_ap_getmac.def, 0);
+#endif //ESP_CFG_ESP_FLAVOR
             ESP_AT_PORT_SEND_CONST_STR("?");
             ESP_AT_PORT_SEND_END();
             break;
@@ -1596,7 +1657,11 @@ espi_initiate_cmd(esp_msg_t* msg) {
                 ESP_AT_PORT_SEND_CONST_STR("AP");
             }
 #endif /* ESP_CFG_MODE_ACCESS_POINT */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CUR_DEF(CMD_IS_CUR(CMD_GET_DEF()) && msg->msg.sta_ap_setip.def, 1);
+#else  //ESP_CFG_ESP_FLAVOR
+            ESP_AT_PORT_SEND_CONST_STR("=");
+#endif //ESP_CFG_ESP_FLAVOR
             espi_send_ip_mac(msg->msg.sta_ap_setip.ip, 1, 1, 0);/* Send IP address */
             if (msg->msg.sta_ap_setip.gw != NULL) { /* Is gateway set? */
                 espi_send_ip_mac(msg->msg.sta_ap_setip.gw, 1, 1, 1);/* Send gateway address */
@@ -1627,7 +1692,11 @@ espi_initiate_cmd(esp_msg_t* msg) {
             }
 #endif /* ESP_CFG_MODE_ACCESS_POINT */
             ESP_AT_PORT_SEND_CONST_STR("MAC");
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CUR_DEF(CMD_IS_CUR(CMD_GET_DEF()) && msg->msg.sta_ap_setmac.def, 1);
+#else  //ESP_CFG_ESP_FLAVOR
+            ESP_AT_PORT_SEND_CONST_STR("=");
+#endif //ESP_CFG_ESP_FLAVOR
             espi_send_ip_mac(msg->msg.sta_ap_setmac.mac, 0, 1, 0);
             ESP_AT_PORT_SEND_END();
             break;
@@ -1637,7 +1706,11 @@ espi_initiate_cmd(esp_msg_t* msg) {
         case ESP_CMD_WIFI_CWSAP_SET: {          /* Set access point parameters */
             ESP_AT_PORT_SEND_BEGIN();
             ESP_AT_PORT_SEND_CONST_STR("+CWSAP");
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             ESP_AT_PORT_SEND_CUR_DEF(msg->msg.ap_conf.def, 1);
+#else  //ESP_CFG_ESP_FLAVOR
+            ESP_AT_PORT_SEND_CONST_STR("=");
+#endif //ESP_CFG_ESP_FLAVOR
             espi_send_string(msg->msg.ap_conf.ssid, 1, 1, 0);
             espi_send_string(msg->msg.ap_conf.pwd, 1, 1, 1);
             espi_send_number(ESP_U32(msg->msg.ap_conf.ch), 0, 1);

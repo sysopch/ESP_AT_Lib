@@ -617,6 +617,25 @@
 #endif
 
 /**
+ * \brief           Enables `1` or disables `0` application-specific commands
+ *
+ * Special commands for application-specific purposes
+ *
+ * \todo            This feature should be generalized and provide API for registration
+ *                  of custom commands
+ */
+#ifndef ESP_CFG_CUSTOM_CMDS
+#define ESP_CFG_CUSTOM_CMDS                 0
+#endif
+
+/**
+ * \brief           Number of fwup data packet retries before giving up
+ */
+#ifndef ESP_CFG_FWUP_MAX_DATA_RETRIES
+#define ESP_CFG_FWUP_MAX_DATA_RETRIES       5
+#endif
+
+/**
  * \defgroup        ESP_CONFIG_STD_LIB Standard library
  * \brief           Standard C library configuration
  * \{
@@ -668,9 +687,23 @@ void *  my_memset(void* dst, int b, size_t len);
  * \}
  */
 
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
+
 #define ESP_MIN_AT_VERSION_MAJOR            1   /*!< Minimal major version */
 #define ESP_MIN_AT_VERSION_MINOR            6   /*!< Minimal minor version */
 #define ESP_MIN_AT_VERSION_PATCH            0   /*!< Minimal patch version */
+
+#elif ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP32
+
+#define ESP_MIN_AT_VERSION_MAJOR            1   /*!< Minimal major version */
+#define ESP_MIN_AT_VERSION_MINOR            1   /*!< Minimal minor version */
+#define ESP_MIN_AT_VERSION_PATCH            3   /*!< Minimal patch version */
+
+#else  //ESP_CFG_ESP_FLAVOR
+
+#error Please define ESP_CFG_ESP_FLAVOR to either ESP_FLAVOR_ESP8266 or ESP_FLAVOR_ESP32
+
+#endif //ESP_CFG_ESP_FLAVOR
 
 /**
  * \}

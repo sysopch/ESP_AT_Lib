@@ -76,7 +76,9 @@ esp_sta_join(const char* name, const char* pass, const esp_mac_t* mac, uint8_t d
     ESP_MSG_VAR_ALLOC(msg);
     ESP_MSG_VAR_SET_EVT(msg);
     ESP_MSG_VAR_REF(msg).cmd_def = ESP_CMD_WIFI_CWJAP;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_join.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
     ESP_MSG_VAR_REF(msg).msg.sta_join.name = name;
     ESP_MSG_VAR_REF(msg).msg.sta_join.pass = pass;
     ESP_MSG_VAR_REF(msg).msg.sta_join.mac = mac;
@@ -156,7 +158,9 @@ esp_sta_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm, uint8_t def,
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.ip = ip;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.gw = gw;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.nm = nm;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -185,7 +189,9 @@ esp_sta_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm, uint8_
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.ip = ip;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.gw = gw;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.nm = nm;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -208,7 +214,9 @@ esp_sta_getmac(esp_mac_t* mac, uint8_t def,
     ESP_MSG_VAR_SET_EVT(msg);
     ESP_MSG_VAR_REF(msg).cmd_def = ESP_CMD_WIFI_CIPSTAMAC_GET;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getmac.mac = mac;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getmac.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -233,7 +241,9 @@ esp_sta_setmac(const esp_mac_t* mac, uint8_t def,
     ESP_MSG_VAR_SET_EVT(msg);
     ESP_MSG_VAR_REF(msg).cmd_def = ESP_CMD_WIFI_CIPSTAMAC_SET;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setmac.mac = mac;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setmac.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }

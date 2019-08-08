@@ -237,7 +237,9 @@ typedef struct esp_msg {
             const char* name;                   /*!< AP name */
             const char* pass;                   /*!< AP password */
             const esp_mac_t* mac;               /*!< Specific MAC address to use when connecting to AP */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             uint8_t def;                        /*!< Value indicates to connect as current only or as default */
+#endif //ESP_CFG_ESP_FLAVOR
             uint8_t error_num;                  /*!< Error number on connecting */
         } sta_join;                             /*!< Message for joining to access point */
         struct {
@@ -262,7 +264,9 @@ typedef struct esp_msg {
             uint8_t ch;                         /*!< RF Channel used */
             uint8_t max_sta;                    /*!< Max allowed connected stations */
             uint8_t hid;                        /*!< Configuration if network is hidden or visible */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             uint8_t def;                        /*!< Save as default configuration */
+#endif //ESP_CFG_ESP_FLAVOR
         } ap_conf;                              /*!< Parameters to configure access point */
         struct {
             esp_sta_t* stas;                    /*!< Pointer to array to save access points */
@@ -275,21 +279,29 @@ typedef struct esp_msg {
             esp_ip_t* ip;                       /*!< Pointer to IP variable */
             esp_ip_t* gw;                       /*!< Pointer to gateway variable */
             esp_ip_t* nm;                       /*!< Pointer to netmask variable */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             uint8_t def;                        /*!< Value for receiving default or current settings */
+#endif //ESP_CFG_ESP_FLAVOR
         } sta_ap_getip;                         /*!< Message for reading station or access point IP */
         struct {
             esp_mac_t* mac;                     /*!< Pointer to MAC variable */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             uint8_t def;                        /*!< Value for receiving default or current settings */
+#endif //ESP_CFG_ESP_FLAVOR
         } sta_ap_getmac;                        /*!< Message for reading station or access point MAC address */
         struct {
             const esp_ip_t* ip;                 /*!< Pointer to IP variable */
             const esp_ip_t* gw;                 /*!< Pointer to gateway variable */
             const esp_ip_t* nm;                 /*!< Pointer to netmask variable */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             uint8_t def;                        /*!< Value for receiving default or current settings */
+#endif //ESP_CFG_ESP_FLAVOR
         } sta_ap_setip;                         /*!< Message for setting station or access point IP */
         struct {
             const esp_mac_t* mac;               /*!< Pointer to MAC variable */
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
             uint8_t def;                        /*!< Value for receiving default or current settings */
+#endif //ESP_CFG_ESP_FLAVOR
         } sta_ap_setmac;                        /*!< Message for setting station or access point MAC address */
         struct {
             const char* hostname_set;           /*!< Hostname set value */
@@ -436,7 +448,9 @@ typedef struct {
     uint32_t            active_conns;           /*!< Bit field of currently active connections, @todo: In case user has more than 32 connections, single variable is not enough */
     uint32_t            active_conns_last;      /*!< The same as previous but status before last check */
 
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     esp_link_conn_t     link_conn;              /*!< Link connection handle */
+#endif //ESP_CFG_ESP_FLAVOR
     esp_ipd_t           ipd;                    /*!< Connection incoming data structure */
     esp_conn_t          conns[ESP_CFG_MAX_CONNS];   /*!< Array of all connection structures */
 
@@ -564,7 +578,10 @@ typedef struct {
 #define ESP_AT_PORT_SEND_END()              ESP_AT_PORT_SEND(CRLF, CRLF_LEN)
 
 #define ESP_AT_PORT_SEND_STR(str)           esp.ll.send_fn((const uint8_t *)(str), (size_t)strlen(str))
-#define ESP_AT_PORT_SEND_CONST_STR(str)     esp.ll.send_fn((const uint8_t *)(str), (size_t)(sizeof(str) - 1))
+#define ESP_AT_PORT_SEND_CONST_STR(str)     do { esp.ll.send_fn((const uint8_t *)(str), (size_t)(sizeof(str) - 1)); } while(0)
+//#define ESP_AT_PORT_SEND_CONST_STR(str)     do { esp.ll.send_fn((const uint8_t *)(str), (size_t)(sizeof(str) - 1));
+//        ESP_DEBUGF(ESP_CFG_DBG_INPUT | ESP_DBG_TYPE_TRACE, "[OUT] %s", str); } while(0)
+
 #define ESP_AT_PORT_SEND_CHR(str)           esp.ll.send_fn((const uint8_t *)(str), (size_t)1)
 #define ESP_AT_PORT_SEND(d, l)              esp.ll.send_fn((const uint8_t *)(d), (size_t)(l))
 

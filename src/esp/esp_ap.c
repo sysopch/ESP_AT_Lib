@@ -48,7 +48,10 @@
  * \return          \ref espOK on success, member of \ref espr_t enumeration otherwise
  */
 espr_t
-esp_ap_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm, uint8_t def,
+esp_ap_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm,
+                #if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
+                uint8_t def,
+                #endif //ESP_CFG_ESP_FLAVOR
                 const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking) {
     ESP_MSG_VAR_DEFINE(msg);
 
@@ -58,7 +61,9 @@ esp_ap_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm, uint8_t def,
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.ip = ip;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.gw = gw;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.nm = nm;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getip.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -75,7 +80,10 @@ esp_ap_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm, uint8_t def,
  * \return          \ref espOK on success, member of \ref espr_t enumeration otherwise
  */
 espr_t
-esp_ap_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm, uint8_t def,
+esp_ap_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm,
+                #if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
+                uint8_t def,
+                #endif //ESP_CFG_ESP_FLAVOR
                 const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking) {
     ESP_MSG_VAR_DEFINE(msg);
 
@@ -87,7 +95,9 @@ esp_ap_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm, uint8_t
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.ip = ip;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.gw = gw;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.nm = nm;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setip.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -102,7 +112,10 @@ esp_ap_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm, uint8_t
  * \return          \ref espOK on success, member of \ref espr_t enumeration otherwise
  */
 espr_t
-esp_ap_getmac(esp_mac_t* mac, uint8_t def,
+esp_ap_getmac(esp_mac_t* mac,
+                #if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
+                uint8_t def,
+                #endif //ESP_CFG_ESP_FLAVOR
                 const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking) {
     ESP_MSG_VAR_DEFINE(msg);
 
@@ -110,7 +123,9 @@ esp_ap_getmac(esp_mac_t* mac, uint8_t def,
     ESP_MSG_VAR_SET_EVT(msg);
     ESP_MSG_VAR_REF(msg).cmd_def = ESP_CMD_WIFI_CIPAPMAC_GET;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getmac.mac = mac;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_getmac.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -125,7 +140,10 @@ esp_ap_getmac(esp_mac_t* mac, uint8_t def,
  * \return          \ref espOK on success, member of \ref espr_t enumeration otherwise
  */
 espr_t
-esp_ap_setmac(const esp_mac_t* mac, uint8_t def,
+esp_ap_setmac(const esp_mac_t* mac,
+                #if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
+                uint8_t def,
+                #endif //ESP_CFG_ESP_FLAVOR
                 const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking) {
     ESP_MSG_VAR_DEFINE(msg);
 
@@ -136,7 +154,9 @@ esp_ap_setmac(const esp_mac_t* mac, uint8_t def,
     ESP_MSG_VAR_SET_EVT(msg);
     ESP_MSG_VAR_REF(msg).cmd_def = ESP_CMD_WIFI_CIPAPMAC_SET;
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setmac.mac = mac;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.sta_ap_setmac.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 1000);
 }
@@ -157,8 +177,11 @@ esp_ap_setmac(const esp_mac_t* mac, uint8_t def,
  * \return          \ref espOK on success, member of \ref espr_t enumeration otherwise
  */
 espr_t
-esp_ap_configure(const char* ssid, const char* pwd, uint8_t ch, esp_ecn_t ecn, uint8_t max_sta, uint8_t hid, uint8_t def,
-                    const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking) {
+esp_ap_configure(const char* ssid, const char* pwd, uint8_t ch, esp_ecn_t ecn, uint8_t max_sta, uint8_t hid,
+        #if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
+        uint8_t def,
+        #endif //ESP_CFG_ESP_FLAVOR
+        const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking) {
     ESP_MSG_VAR_DEFINE(msg);
 
     ESP_ASSERT("ssid != NULL", ssid != NULL);   /* Assert input parameters */
@@ -177,7 +200,9 @@ esp_ap_configure(const char* ssid, const char* pwd, uint8_t ch, esp_ecn_t ecn, u
     ESP_MSG_VAR_REF(msg).msg.ap_conf.ecn = ecn;
     ESP_MSG_VAR_REF(msg).msg.ap_conf.max_sta = max_sta;
     ESP_MSG_VAR_REF(msg).msg.ap_conf.hid = hid;
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
     ESP_MSG_VAR_REF(msg).msg.ap_conf.def = def;
+#endif //ESP_CFG_ESP_FLAVOR
 
     return espi_send_msg_to_producer_mbox(&ESP_MSG_VAR_REF(msg), espi_initiate_cmd, 10000);
 }

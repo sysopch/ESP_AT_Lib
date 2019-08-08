@@ -111,6 +111,7 @@ extern "C" {
         ESP_DEBUGF(c, fmt, ## __VA_ARGS__); \
     }                                       \
 } while (0)
+
 #else
 #undef ESP_CFG_DBG
 #define ESP_CFG_DBG                 ESP_DBG_OFF

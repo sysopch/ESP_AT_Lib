@@ -50,12 +50,21 @@ extern "C" {
  * In order to be able to use AP feature, \ref ESP_CFG_MODE_ACCESS_POINT must be enabled.
  */
 
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
 espr_t      esp_ap_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm, uint8_t def, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
 espr_t      esp_ap_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm, uint8_t def, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
 espr_t      esp_ap_getmac(esp_mac_t* mac, uint8_t def, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
 espr_t      esp_ap_setmac(const esp_mac_t* mac, uint8_t def, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
 
 espr_t      esp_ap_configure(const char* ssid, const char* pwd, uint8_t ch, esp_ecn_t ecn, uint8_t max_sta, uint8_t hid, uint8_t def, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
+#else   //ESP_CFG_ESP_FLAVOR
+espr_t      esp_ap_getip(esp_ip_t* ip, esp_ip_t* gw, esp_ip_t* nm, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
+espr_t      esp_ap_setip(const esp_ip_t* ip, const esp_ip_t* gw, const esp_ip_t* nm, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
+espr_t      esp_ap_getmac(esp_mac_t* mac, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
+espr_t      esp_ap_setmac(const esp_mac_t* mac, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
+
+espr_t      esp_ap_configure(const char* ssid, const char* pwd, uint8_t ch, esp_ecn_t ecn, uint8_t max_sta, uint8_t hid, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
+#endif //ESP_CFG_ESP_FLAVOR
 
 espr_t      esp_ap_list_sta(esp_sta_t* sta, size_t stal, size_t* staf, const esp_api_cmd_evt_fn evt_fn, void* const evt_arg, const uint32_t blocking);
 

@@ -212,7 +212,11 @@ esp_sys_thread_create(esp_sys_thread_t* t, const char* name, esp_sys_thread_fn t
 
 uint8_t
 esp_sys_thread_terminate(esp_sys_thread_t* t) {
-    vTaskDelete(*t);
+    if (t) {
+        vTaskDelete(*t);
+    } else {
+        vTaskDelete(NULL);
+    }
     return 1;
 }
 

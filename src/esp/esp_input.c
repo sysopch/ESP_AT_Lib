@@ -87,6 +87,8 @@ esp_input_process(const void* data, size_t len) {
 
     if (len) {
         esp_core_lock();
+        ESP_DEBUGF(ESP_CFG_DBG_INPUT | ESP_DBG_TYPE_TRACE,
+            "[IN]: %d", len);
         res = espi_process(data, len);          /* Process input data */
         esp_core_unlock();
     }

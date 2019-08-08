@@ -355,6 +355,7 @@ espi_parse_at_sdk_version(const char* str, esp_sw_version_t* version_out) {
     return 1;
 }
 
+#if ESP_CFG_ESP_FLAVOR == ESP_FLAVOR_ESP8266
 /**
  * \brief           Parse +LINK_CONN received string for new connection active
  */
@@ -384,6 +385,7 @@ espi_parse_link_conn(const char* str) {
     esp.m.link_conn.local_port = espi_parse_number(&str);
     return 1;
 }
+#endif //ESP_CFG_ESP_FLAVOR
 
 #if ESP_CFG_MODE_STATION || __DOXYGEN__
 /**

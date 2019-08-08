@@ -69,6 +69,7 @@ espr_t          esp_netconn_connect(esp_netconn_p nc, const char* host, esp_port
 espr_t          esp_netconn_receive(esp_netconn_p nc, esp_pbuf_p* pbuf);
 espr_t          esp_netconn_close(esp_netconn_p nc);
 int8_t          esp_netconn_getconnnum(esp_netconn_p nc);
+espr_t          esp_netconn_get_remote_ip(esp_netconn_p nc, esp_ip_t* ip);
 void            esp_netconn_set_receive_timeout(esp_netconn_p nc, uint32_t timeout);
 uint32_t        esp_netconn_get_receive_timeout(esp_netconn_p nc);
 
